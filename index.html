@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact Sheet — Photo Prompt Generator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#15130f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ContactSheet">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #15130f;
+    --bg-raised: #1c1a15;
+    --paper: #ede6d6;
+    --paper-dim: #d9d1bd;
+    --ink: #211d16;
+    --ink-dim: #6b6355;
+    --safelight: #b23b2c;
+    --safelight-bright: #d1523f;
+    --contact-blue: #4c7a8c;
+    --contact-blue-bright: #6fa0b3;
+    --border: rgba(237,230,214,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--paper);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;}
+
+  header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);}
+  .brand{display:flex;align-items:center;justify-content:space-between;padding:18px 28px 10px;}
+  .brand h1{font-size:22px;color:var(--paper);}
+  .brand h1 span{color:var(--safelight-bright);}
+  .brand .tagline{font-size:12px;color:var(--ink-dim);margin-top:2px;}
+  .status-dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-dim);}
+  .status-dot i{width:7px;height:7px;border-radius:50%;background:#4c7a2c;display:inline-block;}
+  .status-dot.offline i{background:var(--safelight);}
+  .brand-right{display:flex;align-items:center;gap:14px;}
+  .icon-btn{background:none;border:1px solid var(--border);color:var(--paper);border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;padding:0;}
+  .icon-btn:hover{border-color:var(--safelight-bright);color:var(--safelight-bright);}
+
+  .filmstrip{display:flex;gap:0;padding:0 20px;overflow-x:auto;background:
+    repeating-linear-gradient(90deg, transparent, transparent 34px, rgba(237,230,214,0.05) 34px, rgba(237,230,214,0.05) 40px);
+  }
+  .frame{position:relative;padding:14px 22px 16px;cursor:pointer;border:none;background:none;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12.5px;white-space:nowrap;transition:color .15s;}
+  .frame small{display:block;font-size:9.5px;letter-spacing:0.12em;color:var(--ink-dim);margin-bottom:3px;}
+  .frame .label{font-family:'Inter',sans-serif;font-size:14px;font-weight:500;color:inherit;}
+  .frame:hover{color:var(--paper);}
+  .frame.active{color:var(--safelight-bright);}
+  .frame.active::after{content:"";position:absolute;bottom:0;left:16px;right:16px;height:2px;background:var(--safelight-bright);}
+  .frame .sprocket{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:1px;background:rgba(237,230,214,0.15);}
+
+  main{max-width:980px;margin:0 auto;padding:32px 24px 80px;}
+  .panel{display:none;}
+  .panel.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-head{margin-bottom:20px;}
+  .section-head h2{font-size:24px;color:var(--paper);}
+  .section-head p{color:var(--ink-dim);font-size:13.5px;margin-top:4px;}
+
+  .card{background:var(--paper);color:var(--ink);border-radius:3px;padding:22px;margin-bottom:18px;box-shadow:0 1px 0 rgba(0,0,0,0.2);}
+  .card-dark{background:var(--bg-raised);color:var(--paper);border:1px solid var(--border);border-radius:3px;padding:22px;margin-bottom:18px;}
+
+  label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-dim);margin-bottom:6px;font-weight:600;}
+  .card-dark label{color:var(--ink-dim);}
+  input[type=text], input[type=search], input[type=password], textarea, select{
+    width:100%;padding:10px 12px;border:1px solid rgba(33,29,22,0.18);border-radius:2px;
+    background:#fff;color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;margin-bottom:16px;
+  }
+  .card-dark input, .card-dark textarea, .card-dark select{background:#0f0e0b;color:var(--paper);border:1px solid var(--border);}
+  textarea{resize:vertical;min-height:70px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+  @media(max-width:640px){.field-grid{grid-template-columns:1fr;}}
+
+  button{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;border:none;border-radius:2px;padding:11px 18px;cursor:pointer;transition:opacity .15s, transform .1s;}
+  button:active{transform:scale(0.98);}
+  .btn-primary{background:var(--safelight);color:#fff8f0;}
+  .btn-primary:hover{background:var(--safelight-bright);}
+  .btn-secondary{background:transparent;color:var(--paper);border:1px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--paper);}
+  .card .btn-secondary{color:var(--ink);border-color:rgba(33,29,22,0.25);}
+  .btn-ghost{background:none;color:var(--ink-dim);padding:6px 10px;font-size:12px;}
+  .btn-ghost:hover{color:var(--safelight);}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+  .btn-icon{background:none;color:var(--ink-dim);padding:2px 6px;font-size:12px;border:none;}
+  .btn-icon:hover{color:var(--safelight-bright);}
+  .btn-icon.danger:hover{color:var(--safelight-bright);}
+
+  .prompt-output{background:#0f0e0b;color:var(--paper);border:1px dashed var(--border);border-radius:2px;padding:18px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:1.6;white-space:pre-wrap;min-height:60px;}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;background:rgba(76,122,140,0.18);color:var(--contact-blue-bright);border:1px solid rgba(76,122,140,0.35);border-radius:20px;padding:4px 12px;font-size:11.5px;font-family:'IBM Plex Mono',monospace;margin:0 6px 6px 0;}
+  .chip button{background:none;padding:0;color:inherit;font-size:12px;line-height:1;}
+  .card .chip{color:var(--contact-blue);border-color:rgba(76,122,140,0.4);background:rgba(76,122,140,0.08);}
+
+  .hist-card{border-left:3px solid var(--safelight);}
+  .hist-card .meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .hist-card h3{font-size:15.5px;}
+  .hist-card .ts{font-size:11px;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;}
+  .hist-card .prompt-text{font-size:13.5px;line-height:1.55;color:#3a352a;margin-bottom:10px;}
+  .source-tag{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:20px;font-family:'IBM Plex Mono',monospace;}
+  .source-tag.manual{background:rgba(76,122,140,0.15);color:var(--contact-blue);}
+  .source-tag.image{background:rgba(178,59,44,0.15);color:var(--safelight);}
+
+  .lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:720px){.lib-grid{grid-template-columns:1fr;}}
+  .lib-cat h3{font-size:14px;color:var(--paper);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .lib-cat h3 .cat-name{flex:1;overflow:hidden;text-overflow:ellipsis;}
+  .lib-cat h3 .count{color:var(--ink-dim);font-size:11px;font-family:'IBM Plex Mono',monospace;}
+  .lib-cat h3 .cat-actions{display:flex;gap:2px;align-items:center;}
+  .lib-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;gap:8px;}
+  .lib-item .name{color:var(--paper);}
+  .lib-item .desc{color:var(--ink-dim);font-size:11.5px;display:block;}
+  .lib-item .item-actions{display:flex;gap:2px;flex-shrink:0;}
+  .lib-item button{background:none;color:var(--ink-dim);font-size:12px;padding:2px 6px;}
+  .lib-item button:hover{color:var(--safelight-bright);}
+  .lib-item.editing{flex-direction:column;align-items:stretch;}
+  .lib-item.editing input{margin-bottom:8px;}
+  .lib-item .edit-row{display:flex;gap:8px;}
+  .lib-item .edit-row input{flex:1;margin-bottom:8px;}
+
+  .drop-zone{border:1.5px dashed var(--border);border-radius:4px;padding:36px 20px;text-align:center;color:var(--ink-dim);cursor:pointer;transition:border-color .15s;}
+  .drop-zone:hover, .drop-zone.drag{border-color:var(--safelight-bright);color:var(--paper);}
+  .drop-zone input{display:none;}
+  #imgPreviewWrap{text-align:center;margin:16px 0;}
+  #imgPreviewWrap img{max-width:100%;max-height:340px;border-radius:3px;border:1px solid var(--border);}
+
+  .empty-state{text-align:center;padding:40px 20px;color:var(--ink-dim);font-size:13.5px;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--paper);color:var(--ink);padding:11px 20px;border-radius:3px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,0.35);opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:88vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hint{font-size:11.5px;color:var(--ink-dim);margin-top:-8px;margin-bottom:14px;}
+
+  .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .confirm-overlay.show{display:flex;}
+  .confirm-box{background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:22px;max-width:360px;width:100%;}
+  .confirm-box h3{font-size:15px;margin-bottom:8px;color:var(--paper);}
+  .confirm-box p{font-size:13px;color:var(--ink-dim);margin-bottom:18px;line-height:1.5;}
+  .confirm-box input{margin-bottom:16px;}
+
+  .install-banner{position:fixed;left:12px;right:12px;bottom:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;padding:14px 16px;display:none;align-items:center;gap:12px;z-index:55;box-shadow:0 8px 30px rgba(0,0,0,0.4);}
+  .install-banner.show{display:flex;}
+  .install-banner p{margin:0;font-size:12.5px;color:var(--paper);flex:1;line-height:1.4;}
+  .install-banner .btn-row{margin:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div>
+      <h1>Contact<span>Sheet</span></h1>
+      <div class="tagline">Photo prompt generator — build, save, recreate</div>
+    </div>
+    <div class="brand-right">
+      <div class="status-dot offline" id="statusDot"><i></i><span id="statusText">Connecting to sheet…</span></div>
+      <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+    </div>
+  </div>
+  <nav class="filmstrip" id="filmstrip">
+    <button class="frame active" data-panel="builder"><span class="sprocket"></span><small>FRAME 01</small><span class="label">Builder</span></button>
+    <button class="frame" data-panel="history"><span class="sprocket"></span><small>FRAME 02</small><span class="label">History</span></button>
+    <button class="frame" data-panel="image"><span class="sprocket"></span><small>FRAME 03</small><span class="label">Image → Prompt</span></button>
+    <button class="frame" data-panel="library"><span class="sprocket"></span><small>FRAME 04</small><span class="label">Library</span></button>
+  </nav>
+</header>
+
+<main>
+
+  <section class="panel active" id="panel-builder">
+    <div class="section-head">
+      <h2>Build a prompt</h2>
+      <p>Pick from your library, describe the subject, and generate a ready-to-use image prompt.</p>
+    </div>
+
+    <div class="card">
+      <div class="field-grid">
+        <div>
+          <label>Subject A</label>
+          <input type="text" id="b-subjectA" placeholder="e.g. a woman in her late 20s with short curly hair">
+        </div>
+        <div>
+          <label>Subject B (optional — for couple photos)</label>
+          <input type="text" id="b-subjectB" placeholder="e.g. a man in his early 30s with a short beard">
+        </div>
+      </div>
+      <label>Action / what they're doing</label>
+      <input type="text" id="b-action" placeholder="e.g. leaning against a wall, laughing — or, for couples, foreheads touching, walking hand in hand">
+
+      <div id="b-category-fields" class="field-grid"></div>
+
+      <label>Extra details (optional)</label>
+      <textarea id="b-extra" placeholder="Any additional detail — props, weather, film stock, aspect ratio…"></textarea>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="b-generate">Generate prompt</button>
+        <button class="btn-secondary" id="b-clear">Clear fields</button>
+      </div>
+    </div>
+
+    <div class="card-dark" id="b-output-card" style="display:none;">
+      <label>Generated prompt</label>
+      <div class="prompt-output" id="b-output"></div>
+      <label style="margin-top:16px;">Title (for history)</label>
+      <input type="text" id="b-title" placeholder="e.g. Golden hour editorial portrait">
+      <div class="btn-row">
+        <button class="btn-primary" id="b-save">Save to history</button>
+        <button class="btn-secondary" id="b-copy">Copy prompt</button>
+        <button class="btn-secondary" id="b-export">Export .txt</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-history">
+    <div class="section-head">
+      <h2>Prompt history</h2>
+      <p>Everything you've saved, stored in your Google Sheet.</p>
+    </div>
+    <div class="btn-row" style="margin-bottom:16px;">
+      <input type="search" id="h-search" placeholder="Search history…" style="margin-bottom:0;max-width:280px;">
+      <button class="btn-secondary" id="h-export-json">Export all (.json)</button>
+      <button class="btn-secondary" id="h-export-csv">Export all (.csv)</button>
+      <button class="btn-secondary" id="h-refresh">Refresh</button>
+    </div>
+    <div id="h-list"></div>
+  </section>
+
+  <section class="panel" id="panel-image">
+    <div class="section-head">
+      <h2>Recreate an image</h2>
+      <p>Upload, drop, or paste a reference photo — it's analyzed and turned into a prompt you can edit and save.</p>
+    </div>
+    <div class="card-dark">
+      <div class="drop-zone" id="dropZone">
+        <div id="dropZoneText">Drag & drop, paste (Ctrl/Cmd+V), or click to choose an image</div>
+        <input type="file" id="imgInput" accept="image/*">
+      </div>
+      <div id="imgPreviewWrap" style="display:none;"><img id="imgPreview" alt="Uploaded reference"></div>
+      <div class="btn-row" id="imgActionRow" style="display:none;">
+        <button class="btn-primary" id="img-analyze">Analyze image</button>
+        <button class="btn-secondary" id="img-remove">Remove image</button>
+      </div>
+      <p class="hint" id="img-note" style="display:none;margin-top:14px;">Uses a vision model to describe the photo. On your phone/GitHub Pages deployment this calls Gemini with the free API key you set in ⚙ Settings; inside a Claude artifact it uses Claude directly.</p>
+    </div>
+
+    <div class="card-dark" id="img-output-card" style="display:none;">
+      <label>Generated prompt</label>
+      <div class="prompt-output" id="img-output" contenteditable="true"></div>
+      <label style="margin-top:16px;">Title (for history)</label>
+      <input type="text" id="img-title" placeholder="e.g. Recreate — rooftop portrait reference">
+      <div class="btn-row">
+        <button class="btn-primary" id="img-save">Save to history</button>
+        <button class="btn-secondary" id="img-copy">Copy prompt</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-library">
+    <div class="section-head">
+      <h2>Library manager</h2>
+      <p>Maintain the styles, clothing, lighting and other building blocks used in the prompt builder. Each category below is a dropdown in the Builder tab — rename or delete it here, or edit/remove individual items.</p>
+    </div>
+
+    <div class="card-dark">
+      <h3 style="font-size:15px;margin-bottom:14px;">Add item</h3>
+      <div class="field-grid">
+        <div>
+          <label>Category</label>
+          <select id="lib-category"></select>
+        </div>
+        <div>
+          <label>Name</label>
+          <input type="text" id="lib-name" placeholder="e.g. Blue hour">
+        </div>
+      </div>
+      <label>Description (optional)</label>
+      <input type="text" id="lib-desc" placeholder="Short note for your own reference">
+      <div class="btn-row">
+        <button class="btn-primary" id="lib-add">Add to library</button>
+      </div>
+    </div>
+
+    <div class="card-dark">
+      <h3 style="font-size:15px;margin-bottom:14px;">Add a new category</h3>
+      <div class="field-grid">
+        <div style="grid-column:1/-1;">
+          <label>Category name</label>
+          <input type="text" id="lib-new-cat" placeholder="e.g. Film Stock">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" id="lib-add-cat">Create category</button>
+      </div>
+    </div>
+
+    <div class="lib-grid" id="lib-grid"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div class="install-banner" id="installBanner">
+  <p id="installBannerText">Install ContactSheet on your home screen for quick, full-screen access.</p>
+  <div class="btn-row">
+    <button class="btn-primary" id="installBannerBtn" style="padding:8px 14px;font-size:12px;">Install</button>
+    <button class="btn-secondary" id="installBannerDismiss" style="padding:8px 14px;font-size:12px;">Not now</button>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmBody"></p>
+    <input type="text" id="confirmInput" style="display:none;">
+    <div class="btn-row">
+      <button class="btn-primary" id="confirmYes">Delete</button>
+      <button class="btn-secondary" id="confirmNo">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="settingsOverlay">
+  <div class="confirm-box">
+    <h3>Settings</h3>
+    <p>Optional: add a free Gemini API key to enable "Image → Prompt" when this app is opened on your phone (outside a Claude artifact). Get one at aistudio.google.com/apikey. Stored only on this device.</p>
+    <input type="password" id="geminiKeyInput" placeholder="Gemini API key">
+    <div class="btn-row">
+      <button class="btn-primary" id="settingsSave">Save</button>
+      <button class="btn-secondary" id="settingsClear">Clear key</button>
+      <button class="btn-secondary" id="settingsClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======================================================================
+   CONFIG — your Apps Script Web App URL (ends in /exec)
+   ====================================================================== */
+const CONFIG = {
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxB5pRgov3tw4tmZi-C-bv1uCvbg0yz84TJz-B4AhYLGt3cakTnIXU9PNFDMqp0kc0k/exec'
+};
+
+let state = { library: {}, history: [] };
+let editingItemId = null; // id of the library item currently being edited inline
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function confirmDialog(title, body){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    document.getElementById('confirmInput').style.display = 'none';
+    overlay.classList.add('show');
+    const yes = document.getElementById('confirmYes');
+    const no = document.getElementById('confirmNo');
+    function cleanup(result){
+      overlay.classList.remove('show');
+      yes.removeEventListener('click', onYes);
+      no.removeEventListener('click', onNo);
+      resolve(result);
+    }
+    function onYes(){ cleanup(true); }
+    function onNo(){ cleanup(false); }
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+  });
+}
+
+// Same modal, but with a text input — replaces window.prompt() so renames
+// work reliably on mobile browsers and match the app's own visual style.
+function promptDialog(title, body, defaultValue){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    const input = document.getElementById('confirmInput');
+    input.style.display = 'block';
+    input.value = defaultValue || '';
+    overlay.classList.add('show');
+    input.focus();
+    input.select();
+    const yes = document.getElementById('confirmYes');
+    const no = document.getElementById('confirmNo');
+    const prevYesLabel = yes.textContent;
+    yes.textContent = 'Save';
+    function cleanup(result){
+      overlay.classList.remove('show');
+      input.style.display = 'none';
+      yes.textContent = prevYesLabel;
+      yes.removeEventListener('click', onYes);
+      no.removeEventListener('click', onNo);
+      input.removeEventListener('keydown', onKey);
+      resolve(result);
+    }
+    function onYes(){ cleanup(input.value.trim()); }
+    function onNo(){ cleanup(null); }
+    function onKey(e){ if(e.key === 'Enter'){ onYes(); } if(e.key === 'Escape'){ onNo(); } }
+    input.addEventListener('keydown', onKey);
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+  });
+}
+
+function download(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function configured(){
+  return CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === -1;
+}
+
+async function apiGet(action){
+  if(!configured()) throw new Error('not-configured');
+  const url = CONFIG.APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action);
+  const res = await fetch(url);
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Unknown backend error');
+  return json;
+}
+
+async function apiPost(action, data){
+  if(!configured()) throw new Error('not-configured');
+  const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, data })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Unknown backend error');
+  return json;
+}
+
+async function boot(){
+  if(!configured()){
+    document.getElementById('statusText').textContent = 'Backend not configured — see CONFIG at top of file';
+    seedLocalFallback();
+    renderAll();
+    return;
+  }
+  try{
+    const [libRes, histRes] = await Promise.all([apiGet('getLibrary'), apiGet('getHistory')]);
+    state.library = libRes.categories;
+    state.history = histRes.history;
+    document.getElementById('statusDot').classList.remove('offline');
+    document.getElementById('statusText').textContent = 'Connected to Google Sheet';
+  }catch(err){
+    document.getElementById('statusText').textContent = 'Could not reach backend — using local session only';
+    seedLocalFallback();
+  }
+  renderAll();
+}
+
+function seedLocalFallback(){
+  state.library = {
+    'Style': [{id:'s1',name:'Cinematic'},{id:'s2',name:'Editorial fashion'},{id:'s3',name:'Studio portrait'}],
+    'Clothing': [{id:'c1',name:'Tailored blazer'},{id:'c2',name:'Flowing silk gown'}],
+    'Lighting': [{id:'l1',name:'Golden hour'},{id:'l2',name:'Soft window light'}],
+    'Background': [{id:'bg1',name:'Urban alleyway'},{id:'bg2',name:'Minimal studio backdrop'}],
+    'Pose': [{id:'p1',name:'Relaxed three-quarter turn'}],
+    'Mood': [{id:'m1',name:'Moody and introspective'}],
+    'Camera Angle': [{id:'ca1',name:'Eye-level'}],
+    'Composition': [{id:'co1',name:'Rule of thirds'}],
+    'Couple Interaction': [{id:'ci1',name:'Forehead touch'},{id:'ci2',name:'Walking hand in hand'},{id:'ci3',name:'Embracing from behind'}]
+  };
+  state.history = [];
+}
+
+document.getElementById('filmstrip').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.frame');
+  if(!btn) return;
+  document.querySelectorAll('.frame').forEach(f=>f.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+});
+
+function renderBuilderFields(){
+  const wrap = document.getElementById('b-category-fields');
+  wrap.innerHTML = '';
+  Object.keys(state.library).forEach(cat=>{
+    const items = state.library[cat] || [];
+    const field = document.createElement('div');
+    const options = ['<option value="">— none —</option>'].concat(
+      items.map(it => `<option value="${escapeAttr(it.name)}">${escapeHtml(it.name)}</option>`)
+    ).join('');
+    field.innerHTML = `<label>${escapeHtml(cat)}</label><select data-cat="${escapeAttr(cat)}">${options}</select>`;
+    wrap.appendChild(field);
+  });
+}
+
+function buildPromptText(){
+  const subjectA = document.getElementById('b-subjectA').value.trim();
+  const subjectB = document.getElementById('b-subjectB').value.trim();
+  const action = document.getElementById('b-action').value.trim();
+  const extra = document.getElementById('b-extra').value.trim();
+  const tags = {};
+  document.querySelectorAll('#b-category-fields select').forEach(sel=>{
+    if(sel.value) tags[sel.dataset.cat] = sel.value;
+  });
+
+  let subject = '';
+  if(subjectA && subjectB) subject = `${subjectA}, and ${subjectB},`;
+  else if(subjectA) subject = subjectA;
+  else if(subjectB) subject = subjectB;
+
+  let parts = [];
+  if(subject) parts.push(subject);
+  if(action) parts.push(action);
+  if(tags['Pose']) parts.push(`in a ${tags['Pose'].toLowerCase()} pose`);
+  if(tags['Couple Interaction']) parts.push(tags['Couple Interaction'].toLowerCase());
+  if(tags['Clothing']) parts.push(`wearing ${tags['Clothing'].toLowerCase()}`);
+  if(tags['Background']) parts.push(`set against ${tags['Background'].toLowerCase()}`);
+  if(tags['Lighting']) parts.push(`lit with ${tags['Lighting'].toLowerCase()}`);
+  if(tags['Style']) parts.push(`shot in a ${tags['Style'].toLowerCase()} style`);
+  if(tags['Camera Angle']) parts.push(`from a ${tags['Camera Angle'].toLowerCase()} angle`);
+  if(tags['Composition']) parts.push(`using ${tags['Composition'].toLowerCase()} composition`);
+  if(tags['Mood']) parts.push(`with a ${tags['Mood'].toLowerCase()} mood`);
+
+  Object.keys(tags).forEach(cat=>{
+    if(!['Pose','Clothing','Background','Lighting','Style','Camera Angle','Composition','Mood','Couple Interaction'].includes(cat)){
+      parts.push(`${cat.toLowerCase()}: ${tags[cat].toLowerCase()}`);
+    }
+  });
+
+  let text = parts.join(', ');
+  if(extra) text += (text ? '. ' : '') + extra;
+  if(!text) text = 'Describe a subject, action, or pick library tags to generate a prompt.';
+  return { text, tags };
+}
+
+document.getElementById('b-generate').addEventListener('click', ()=>{
+  const { text, tags } = buildPromptText();
+  document.getElementById('b-output').textContent = text;
+  document.getElementById('b-output-card').style.display = 'block';
+  document.getElementById('b-output-card')._tags = tags;
+});
+
+document.getElementById('b-clear').addEventListener('click', ()=>{
+  document.getElementById('b-subjectA').value = '';
+  document.getElementById('b-subjectB').value = '';
+  document.getElementById('b-action').value = '';
+  document.getElementById('b-extra').value = '';
+  document.querySelectorAll('#b-category-fields select').forEach(s=>s.value='');
+  document.getElementById('b-output-card').style.display = 'none';
+});
+
+document.getElementById('b-copy').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(document.getElementById('b-output').textContent);
+  toast('Prompt copied');
+});
+
+document.getElementById('b-export').addEventListener('click', ()=>{
+  download('prompt.txt', document.getElementById('b-output').textContent, 'text/plain');
+});
+
+document.getElementById('b-save').addEventListener('click', async ()=>{
+  const prompt = document.getElementById('b-output').textContent;
+  const title = document.getElementById('b-title').value.trim() || 'Untitled prompt';
+  const tags = document.getElementById('b-output-card')._tags || {};
+  await saveToHistory({ prompt, title, tags, source: 'manual' });
+});
+
+async function saveToHistory(data){
+  try{
+    if(configured()){
+      const res = await apiPost('savePrompt', data);
+      state.history.unshift(res.record);
+    } else {
+      state.history.unshift({ id: 'local-'+Date.now(), timestamp: new Date().toISOString(), ...data });
+    }
+    renderHistory();
+    toast('Saved to history');
+  }catch(err){
+    toast('Could not save: ' + err.message);
+  }
+}
+
+function renderHistory(){
+  const list = document.getElementById('h-list');
+  const q = (document.getElementById('h-search').value || '').toLowerCase();
+  const items = state.history.filter(h => !q ||
+    (h.title||'').toLowerCase().includes(q) || (h.prompt||'').toLowerCase().includes(q));
+
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty-state">No saved prompts yet. Generate one in the Builder tab.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(h=>{
+    const tagsHtml = Object.entries(h.tags||{}).map(([k,v])=>`<span class="chip">${escapeHtml(k)}: ${escapeHtml(v)}</span>`).join('');
+    const date = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
+    return `<div class="card hist-card" data-id="${escapeAttr(h.id)}">
+      <div class="meta">
+        <h3>${escapeHtml(h.title||'Untitled')}</h3>
+        <span class="ts">${date}</span>
+      </div>
+      <span class="source-tag ${h.source==='image'?'image':'manual'}">${h.source==='image'?'from image':'manual'}</span>
+      <p class="prompt-text" style="margin-top:10px;">${escapeHtml(h.prompt)}</p>
+      <div>${tagsHtml}</div>
+      <div class="btn-row">
+        <button class="btn-ghost" data-act="copy">Copy</button>
+        <button class="btn-ghost" data-act="export">Export .txt</button>
+        <button class="btn-ghost" data-act="delete">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('h-list').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  const cardEl = e.target.closest('.hist-card');
+  const id = cardEl.dataset.id;
+  const item = state.history.find(h=>h.id===id);
+  if(btn.dataset.act === 'copy'){
+    navigator.clipboard.writeText(item.prompt);
+    toast('Prompt copied');
+  } else if(btn.dataset.act === 'export'){
+    download((item.title||'prompt').replace(/[^a-z0-9]+/gi,'_') + '.txt', item.prompt, 'text/plain');
+  } else if(btn.dataset.act === 'delete'){
+    const ok = await confirmDialog('Delete this prompt?', 'This will permanently remove it from your history sheet.');
+    if(!ok) return;
+    try{
+      if(configured()) await apiPost('deletePrompt', { id });
+      state.history = state.history.filter(h=>h.id!==id);
+      renderHistory();
+      toast('Deleted');
+    }catch(err){ toast('Could not delete: ' + err.message); }
+  }
+});
+
+document.getElementById('h-search').addEventListener('input', renderHistory);
+document.getElementById('h-refresh').addEventListener('click', async ()=>{
+  if(!configured()){ toast('Backend not configured'); return; }
+  try{
+    const res = await apiGet('getHistory');
+    state.history = res.history;
+    renderHistory();
+    toast('History refreshed');
+  }catch(err){ toast('Could not refresh: ' + err.message); }
+});
+document.getElementById('h-export-json').addEventListener('click', ()=>{
+  download('prompt_history.json', JSON.stringify(state.history, null, 2), 'application/json');
+});
+document.getElementById('h-export-csv').addEventListener('click', ()=>{
+  const header = 'Title,Timestamp,Source,Prompt,Tags\n';
+  const rows = state.history.map(h => [
+    csvEsc(h.title), csvEsc(h.timestamp), csvEsc(h.source),
+    csvEsc(h.prompt), csvEsc(JSON.stringify(h.tags||{}))
+  ].join(',')).join('\n');
+  download('prompt_history.csv', header + rows, 'text/csv');
+});
+function csvEsc(v){ return '"' + String(v||'').replace(/"/g,'""') + '"'; }
+
+const dropZone = document.getElementById('dropZone');
+const imgInput = document.getElementById('imgInput');
+let uploadedImageBase64 = null;
+let uploadedImageMime = null;
+let handlingImageFile = false; // guards against double-fires (drop + change, or duplicate paste events)
+
+dropZone.addEventListener('click', ()=> imgInput.click());
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('drag');
+  if(e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
+});
+imgInput.addEventListener('change', ()=>{
+  if(imgInput.files[0]) handleImageFile(imgInput.files[0]);
+});
+
+// Paste-to-upload (Ctrl/Cmd+V) — only active while the Image panel is open,
+// and guarded with handlingImageFile so a single paste can never trigger
+// two renders of the preview.
+document.addEventListener('paste', (e)=>{
+  const imagePanel = document.getElementById('panel-image');
+  if(!imagePanel.classList.contains('active')) return;
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(let i=0; i<items.length; i++){
+    if(items[i].type.indexOf('image/') === 0){
+      const file = items[i].getAsFile();
+      if(file){ e.preventDefault(); handleImageFile(file); }
+      break; // only ever take the first image found in the clipboard
+    }
+  }
+});
+
+function handleImageFile(file){
+  if(handlingImageFile) return;
+  if(!file.type.startsWith('image/')){ toast('Please upload an image file'); return; }
+  handlingImageFile = true;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const result = reader.result;
+    uploadedImageMime = file.type;
+    uploadedImageBase64 = result.split(',')[1];
+    document.getElementById('imgPreview').src = result;
+    document.getElementById('imgPreviewWrap').style.display = 'block';
+    document.getElementById('imgActionRow').style.display = 'flex';
+    document.getElementById('img-note').style.display = 'block';
+    document.getElementById('dropZoneText').textContent = file.name || 'Pasted image';
+    handlingImageFile = false;
+  };
+  reader.onerror = ()=>{ handlingImageFile = false; toast('Could not read that image'); };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('img-remove').addEventListener('click', ()=>{
+  uploadedImageBase64 = null; uploadedImageMime = null;
+  document.getElementById('imgPreviewWrap').style.display = 'none';
+  document.getElementById('imgActionRow').style.display = 'none';
+  document.getElementById('img-output-card').style.display = 'none';
+  document.getElementById('dropZoneText').textContent = 'Drag & drop, paste (Ctrl/Cmd+V), or click to choose an image';
+  imgInput.value = '';
+});
+
+function isClaudeArtifactHost(){
+  const h = location.hostname;
+  return h.includes('claude.ai') || h.includes('claudeusercontent.com') || h === '';
+}
+
+function getGeminiKey(){
+  return localStorage.getItem('cs_gemini_key') || '';
+}
+
+const VISION_PROMPT_TEMPLATE = (categoryList) =>
+  `You are a photography prompt writer. Look closely at this image and write a single, detailed, ready-to-use photo generation prompt that would let another AI image model recreate this image closely — describe the subject, pose, clothing, lighting, background, camera angle, composition, and mood in one flowing paragraph. Be specific and concrete, not generic. After the paragraph, on a new line write "TAGS:" followed by a compact JSON object mapping any of these categories that clearly apply to a short value describing what you see: ${categoryList}. Only include categories you're confident about. Respond with nothing else besides the paragraph and the TAGS line.`;
+
+async function analyzeWithAnthropic(promptForModel){
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: uploadedImageMime, data: uploadedImageBase64 } },
+          { type: "text", text: promptForModel }
+        ]
+      }]
+    })
+  });
+  const data = await response.json();
+  const textBlocks = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text);
+  return textBlocks.join('\n').trim();
+}
+
+async function analyzeWithGemini(promptForModel, apiKey){
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: promptForModel },
+          { inline_data: { mime_type: uploadedImageMime, data: uploadedImageBase64 } }
+        ]
+      }]
+    })
+  });
+  const data = await response.json();
+  if(data.error) throw new Error(data.error.message || 'Gemini request failed');
+  const candidate = data.candidates && data.candidates[0];
+  const parts = candidate && candidate.content && candidate.content.parts || [];
+  return parts.map(p=>p.text||'').join('\n').trim();
+}
+
+document.getElementById('img-analyze').addEventListener('click', async ()=>{
+  if(!uploadedImageBase64){ toast('Upload an image first'); return; }
+  const btn = document.getElementById('img-analyze');
+  const originalLabel = btn.textContent;
+
+  const useAnthropic = isClaudeArtifactHost();
+  const geminiKey = getGeminiKey();
+  if(!useAnthropic && !geminiKey){
+    toast('Add a free Gemini API key in ⚙ Settings first');
+    document.getElementById('settingsOverlay').classList.add('show');
+    return;
+  }
+
+  btn.innerHTML = '<span class="spinner"></span>Analyzing…';
+  btn.disabled = true;
+  try{
+    const categoryList = Object.keys(state.library).join(', ');
+    const promptForModel = VISION_PROMPT_TEMPLATE(categoryList);
+
+    const full = useAnthropic
+      ? await analyzeWithAnthropic(promptForModel)
+      : await analyzeWithGemini(promptForModel, geminiKey);
+
+    if(!full) throw new Error('Empty response from vision model');
+
+    let promptText = full;
+    let tags = {};
+    const tagMatch = full.match(/TAGS:\s*(\{[\s\S]*\})\s*$/i);
+    if(tagMatch){
+      promptText = full.slice(0, tagMatch.index).trim();
+      try{ tags = JSON.parse(tagMatch[1]); }catch(e){ tags = {}; }
+    }
+
+    document.getElementById('img-output').textContent = promptText;
+    document.getElementById('img-output-card').style.display = 'block';
+    document.getElementById('img-output-card')._tags = tags;
+  }catch(err){
+    toast('Analysis failed: ' + err.message);
+  }finally{
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('img-copy').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(document.getElementById('img-output').textContent);
+  toast('Prompt copied');
+});
+
+document.getElementById('img-save').addEventListener('click', async ()=>{
+  const prompt = document.getElementById('img-output').textContent;
+  const title = document.getElementById('img-title').value.trim() || 'Recreated from image';
+  const tags = document.getElementById('img-output-card')._tags || {};
+  await saveToHistory({ prompt, title, tags, source: 'image' });
+});
+
+function renderLibrarySelect(){
+  const sel = document.getElementById('lib-category');
+  sel.innerHTML = Object.keys(state.library).map(c=>`<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function renderLibraryGrid(){
+  const grid = document.getElementById('lib-grid');
+  grid.innerHTML = Object.keys(state.library).map(cat=>{
+    const items = state.library[cat] || [];
+    const itemsHtml = items.length ? items.map(it => {
+      if(it.id === editingItemId){
+        return `<div class="lib-item editing" data-id="${escapeAttr(it.id)}" data-cat="${escapeAttr(cat)}">
+          <div class="edit-row">
+            <input type="text" data-edit="name" value="${escapeAttr(it.name)}" placeholder="Name">
+          </div>
+          <div class="edit-row">
+            <input type="text" data-edit="desc" value="${escapeAttr(it.description||'')}" placeholder="Description (optional)">
+          </div>
+          <div class="btn-row" style="margin-top:0;">
+            <button class="btn-primary" data-act="save-item" style="padding:7px 14px;font-size:12px;">Save</button>
+            <button class="btn-secondary" data-act="cancel-item" style="padding:7px 14px;font-size:12px;">Cancel</button>
+          </div>
+        </div>`;
+      }
+      return `
+      <div class="lib-item" data-id="${escapeAttr(it.id)}" data-cat="${escapeAttr(cat)}">
+        <span><span class="name">${escapeHtml(it.name)}</span>${it.description ? `<span class="desc">${escapeHtml(it.description)}</span>` : ''}</span>
+        <span class="item-actions">
+          <button class="btn-icon" data-act="edit-item" title="Edit">✎</button>
+          <button class="btn-icon danger" data-act="del-item" title="Delete">✕</button>
+        </span>
+      </div>`;
+    }).join('') : '<div class="empty-state" style="padding:14px 0;">No items yet</div>';
+    return `<div class="card-dark lib-cat" data-cat="${escapeAttr(cat)}">
+      <h3>
+        <span class="cat-name">${escapeHtml(cat)} <span class="count">${items.length}</span></span>
+        <span class="cat-actions">
+          <button class="btn-icon" data-act="rename-cat" title="Rename this dropdown">✎</button>
+          <button class="btn-icon danger" data-act="del-cat" title="Delete this dropdown">✕</button>
+        </span>
+      </h3>
+      ${itemsHtml}
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('lib-grid').addEventListener('click', async (e)=>{
+  const catBtn = e.target.closest('button[data-act="rename-cat"], button[data-act="del-cat"]');
+  if(catBtn){
+    const catEl = e.target.closest('.lib-cat');
+    const cat = catEl.dataset.cat;
+    if(catBtn.dataset.act === 'rename-cat'){
+      const newName = await promptDialog('Rename category', 'Rename the "' + cat + '" dropdown to:', cat);
+      if(!newName || newName === cat) return;
+      if(state.library[newName]){ toast('A category with that name already exists'); return; }
+      try{
+        if(configured()) await apiPost('renameCategory', { oldName: cat, newName: newName });
+        state.library[newName] = state.library[cat].map(it => ({...it, category: newName}));
+        delete state.library[cat];
+        renderLibraryGrid();
+        renderLibrarySelect();
+        renderBuilderFields();
+        toast('Category renamed');
+      }catch(err){ toast('Could not rename: ' + err.message); }
+    } else if(catBtn.dataset.act === 'del-cat'){
+      const count = (state.library[cat]||[]).length;
+      const ok = await confirmDialog('Delete "' + cat + '" dropdown?', 'This removes the entire category and all ' + count + ' item(s) in it, and removes its dropdown from the Builder tab.');
+      if(!ok) return;
+      try{
+        if(configured()) await apiPost('deleteCategory', { name: cat });
+        delete state.library[cat];
+        renderLibraryGrid();
+        renderLibrarySelect();
+        renderBuilderFields();
+        toast('Category deleted');
+      }catch(err){ toast('Could not delete category: ' + err.message); }
+    }
+    return;
+  }
+
+  const itemBtn = e.target.closest('button[data-act="del-item"], button[data-act="edit-item"], button[data-act="save-item"], button[data-act="cancel-item"]');
+  if(!itemBtn) return;
+  const row = e.target.closest('.lib-item');
+  const id = row.dataset.id, cat = row.dataset.cat;
+
+  if(itemBtn.dataset.act === 'edit-item'){
+    editingItemId = id;
+    renderLibraryGrid();
+  } else if(itemBtn.dataset.act === 'cancel-item'){
+    editingItemId = null;
+    renderLibraryGrid();
+  } else if(itemBtn.dataset.act === 'save-item'){
+    const name = row.querySelector('[data-edit="name"]').value.trim();
+    const description = row.querySelector('[data-edit="desc"]').value.trim();
+    if(!name){ toast('Name is required'); return; }
+    try{
+      if(configured()) await apiPost('editLibraryItem', { id, name, description });
+      const item = (state.library[cat]||[]).find(it=>it.id===id);
+      if(item){ item.name = name; item.description = description; }
+      editingItemId = null;
+      renderLibraryGrid();
+      renderBuilderFields();
+      toast('Item updated');
+    }catch(err){ toast('Could not save: ' + err.message); }
+  } else if(itemBtn.dataset.act === 'del-item'){
+    const ok = await confirmDialog('Delete this item?', 'This removes it from the library and the matching dropdown.');
+    if(!ok) return;
+    try{
+      if(configured()) await apiPost('deleteLibraryItem', { id });
+      state.library[cat] = (state.library[cat]||[]).filter(it=>it.id!==id);
+      renderLibraryGrid();
+      renderBuilderFields();
+      toast('Removed from library');
+    }catch(err){ toast('Could not remove: ' + err.message); }
+  }
+});
+
+document.getElementById('lib-add').addEventListener('click', async ()=>{
+  const category = document.getElementById('lib-category').value;
+  const name = document.getElementById('lib-name').value.trim();
+  const description = document.getElementById('lib-desc').value.trim();
+  if(!category || !name){ toast('Category and name are required'); return; }
+  try{
+    let item;
+    if(configured()){
+      const res = await apiPost('addLibraryItem', { category, name, description });
+      item = res.item;
+    } else {
+      item = { id: 'local-'+Date.now(), category, name, description, createdAt: new Date().toISOString() };
+    }
+    if(!state.library[category]) state.library[category] = [];
+    state.library[category].push(item);
+    document.getElementById('lib-name').value = '';
+    document.getElementById('lib-desc').value = '';
+    renderLibraryGrid();
+    renderBuilderFields();
+    toast('Added to library');
+  }catch(err){ toast('Could not add: ' + err.message); }
+});
+
+document.getElementById('lib-add-cat').addEventListener('click', async ()=>{
+  const name = document.getElementById('lib-new-cat').value.trim();
+  if(!name){ toast('Enter a category name'); return; }
+  if(state.library[name]){ toast('That category already exists'); return; }
+  try{
+    if(configured()) await apiPost('addCategory', { name });
+    state.library[name] = [];
+    document.getElementById('lib-new-cat').value = '';
+    renderLibrarySelect();
+    renderLibraryGrid();
+    renderBuilderFields();
+    toast('Category created');
+  }catch(err){ toast('Could not create category: ' + err.message); }
+});
+
+// ---------- Settings (Gemini key) ----------
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.getElementById('geminiKeyInput').value = getGeminiKey();
+  document.getElementById('settingsOverlay').classList.add('show');
+});
+document.getElementById('settingsClose').addEventListener('click', ()=>{
+  document.getElementById('settingsOverlay').classList.remove('show');
+});
+document.getElementById('settingsSave').addEventListener('click', ()=>{
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if(key) localStorage.setItem('cs_gemini_key', key);
+  document.getElementById('settingsOverlay').classList.remove('show');
+  toast(key ? 'Gemini key saved on this device' : 'No key entered');
+});
+document.getElementById('settingsClear').addEventListener('click', ()=>{
+  localStorage.removeItem('cs_gemini_key');
+  document.getElementById('geminiKeyInput').value = '';
+  toast('Gemini key cleared');
+});
+
+// ---------- Install to home screen (PWA) ----------
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(localStorage.getItem('cs_install_dismissed') !== '1'){
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+document.getElementById('installBannerBtn').addEventListener('click', async ()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  }
+});
+document.getElementById('installBannerDismiss').addEventListener('click', ()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('cs_install_dismissed', '1');
+});
+
+function maybeShowIosInstallHint(){
+  const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isStandalone = window.navigator.standalone === true;
+  if(isIos && !isStandalone && localStorage.getItem('cs_install_dismissed') !== '1'){
+    document.getElementById('installBannerText').textContent =
+      'Install ContactSheet: tap the Share icon, then "Add to Home Screen".';
+    document.getElementById('installBannerBtn').textContent = 'Got it';
+    document.getElementById('installBanner').classList.add('show');
+  }
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{ /* fine if this fails, e.g. file:// */ });
+  });
+}
+
+function escapeHtml(str){
+  return String(str??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+
+function renderAll(){
+  renderBuilderFields();
+  renderHistory();
+  renderLibrarySelect();
+  renderLibraryGrid();
+}
+
+boot();
+maybeShowIosInstallHint();
+</script>
+</body>
+</html>
